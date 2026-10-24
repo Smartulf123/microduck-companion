@@ -30,7 +30,7 @@ def swap_feet(on: bool, timeout=30.0) -> None:
         try:
             if ask({}).get("skates") == on:
                 return
-        except OSError:
+        except (OSError, ValueError):  # the old world closing, or the new one not up yet
             pass
         time.sleep(0.5)
     raise TimeoutError("the sim did not come back")
