@@ -28,9 +28,11 @@ with `mujoco numpy onnxruntime` plus a `.pth` pointing at `microduck_rl/src`.
 ## Run
 
 ```
-wsl -d Ubuntu-24.04 -- bash sim.sh      # terminal 1: the simulated duck (Ctrl-C stops it)
-.venv\Scripts\python main.py            # terminal 2: talk to it
+powershell -ExecutionPolicy Bypass -File start.ps1    # 3D duck + robot software + voice, all at once
 ```
+
+The 3D view runs on Windows (`pip install mujoco` in `.venv`) because WSL only has software
+OpenGL here; Pollen's robot software runs in WSL (`sim.sh`) and connects to it.
 
 ```
 .venv\Scripts\python voice.py --debug   # voice only, no duck
