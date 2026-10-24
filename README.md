@@ -18,6 +18,10 @@ A community project, not affiliated with Pollen Robotics. Apache-2.0.
 
 In the 3D window, move the person with the arrow keys (click the window first).
 
+A PS5 controller (USB or Bluetooth) works beside voice — mapping at the top of `gamepad.py`:
+left stick walks, ✕ sit/stand, ○ fall, △ roll, □ beak grab, L1/R1 kicks, Options get up,
+R2 follow on/off, L2 come here, Create stop. Needs `pip install pygame`.
+
 ## Setup (Windows, once)
 
 ```

@@ -8,6 +8,7 @@ import sys
 
 from duck_adapter import Duck
 from follow import Follower, SimEyes
+from gamepad import Gamepad
 from voice import Ears
 
 
@@ -20,6 +21,7 @@ def main():
 
     duck = Duck()
     follower = Follower(duck, SimEyes(), say=lambda text: print(f"  duck: {text}"))
+    Gamepad(duck, follower, say=lambda text: print(f"  {text}")).start()  # if a controller is plugged in
 
     def on_command(command, text):
         print(f"heard: {command}   ({text})")

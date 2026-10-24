@@ -16,7 +16,7 @@ import time
 ADDRESS = ("127.0.0.1", 7810)
 
 # Our behaviour names -> robotd skill names (robot.do). sit/stand are special: one toggle.
-SKILLS = {"kick": "kick_left", "pick": "ground_pick", "roll": "roulade"}
+SKILLS = {"kick": "kick_left", "kick_right": "kick_right", "pick": "ground_pick", "roll": "roulade"}
 
 MOVE_HZ = 20  # robotd stops the duck if robot.move is quiet for 500 ms (deadman)
 
@@ -34,7 +34,7 @@ class Duck:
     # ── the interface ────────────────────────────────────────────────────────
 
     def do(self, behaviour: str) -> str:
-        """sit, stand, kick, pick, roll, drop. Returns "ok" or why the duck refused."""
+        """sit, stand, kick, kick_right, pick, roll, drop. Returns "ok" or why the duck refused."""
         self.velocity = (0.0, 0.0, 0.0)
         if behaviour == "drop":
             # Motors off: the duck collapses where it stands (usually onto its face). "stand" gets it up.
