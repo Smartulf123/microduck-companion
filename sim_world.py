@@ -87,10 +87,13 @@ def launch_passive(model, data, **kwargs):
 
     viewer = _launch_passive(model, data, key_callback=on_key, **kwargs)
 
-    def aim():  # behind the duck, looking the way it faces: arrow keys match the screen
-        with viewer.lock():
-            viewer.cam.distance, viewer.cam.elevation, viewer.cam.azimuth = 4.2, -18, 0
-            viewer.cam.lookat[:] = (1.0, 0.0, 0.6)
+    trunk = model.jnt_bodyid[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "trunk_base_freejoint")]
+
+    def aim():  # behind the duck, looking the way it starts facing (arrow keys match the screen),
+        with viewer.lock():  # and following it around so it never walks out of the picture
+            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            viewer.cam.trackbodyid = trunk
+            viewer.cam.distance, viewer.cam.elevation, viewer.cam.azimuth = 3.5, -18, 0
 
     aim()
     threading.Timer(1.5, aim).start()  # the viewer sometimes resets its camera as it opens

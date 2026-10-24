@@ -15,7 +15,6 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame  # noqa: E402
 from pygame._sdl2 import controller  # noqa: E402
 
-import follow  # noqa: E402
 import skates  # noqa: E402
 
 DEADZONE = 0.15
@@ -38,6 +37,22 @@ RUMBLE = {"drop": (1.0, 1.0, 600), "kick": (0.3, 0.8, 150), "kick_right": (0.3, 
 def axis(pad, which):
     value = pad.get_axis(which) / 32767
     return 0.0 if abs(value) < DEADZONE else max(-1.0, min(1.0, value))
+
+
+# Measured in the sim (velstand): forward only happens between 0.3 and 0.45, backward needs -0.45,
+# and turning only works while walking forward, up to ±0.6. So every stick push lands in the range
+# that actually moves the duck, instead of most of the stick doing nothing. Retune on the real duck.
+WALK_MIN, WALK_MAX, BACK, ARC_YAW = 0.3, 0.45, -0.45, 0.6
+
+
+def stick_to_walk(forward, turn):
+    """Stick (each -1..1, deadzone already removed) -> (vx, vy, vyaw) the sim duck responds to."""
+    if forward < -0.3:
+        return BACK, 0, 0
+    if forward < 0 and not turn:
+        return 0, 0, 0
+    vx = WALK_MIN + (WALK_MAX - WALK_MIN) * max(forward, 0)  # turning alone still walks a gentle arc
+    return vx, 0, turn * ARC_YAW
 
 
 class Gamepad:
@@ -103,7 +118,7 @@ class Gamepad:
                 if self.skates.on:  # forward only: braking on skates tips it over
                     self.duck.walk(max(forward, 0) * skates.MAX_VX, 0, turn * skates.MAX_YAW)
                 else:
-                    self.duck.walk(forward * follow.MAX_VX, 0, turn * follow.MAX_YAW)
+                    self.duck.walk(*stick_to_walk(forward, turn))
                 driving = True
             elif driving:
                 self.duck.walk(0, 0, 0)
