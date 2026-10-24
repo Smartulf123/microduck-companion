@@ -17,8 +17,8 @@ mkdir -p "$STATE"
 cat > "$STATE/companion.toml" <<TOML
 [policy]
 enabled = true
-walk = "$P/alpha_walking.onnx"
-stand = "$P/alpha_stand.onnx"
+walk = "$P/${DUCK_WALK:-velstand.onnx}"
+stand = "${DUCK_STAND:-none}"
 sitstand = "$P/alpha_sitstand.onnx"
 ground_pick = "$P/alpha_ground_pick.onnx"
 kick_left = "$P/ball_kick_left.onnx"

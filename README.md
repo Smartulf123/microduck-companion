@@ -11,7 +11,12 @@ A community project, not affiliated with Pollen Robotics. Apache-2.0.
 | spark | kick (left foot) |
 | plukk / plukk opp | beak grab |
 | rull | forward roll |
+| fall / sov / besvim | motors off: drops on its face (stå or våkn opp gets it up) |
+| følg / følg meg | follows the person, keeping ~0.7 m |
+| kom / kom hit | walks to the person and stops ~0.5 m away |
 | stopp | stop (always wins) |
+
+In the 3D window, move the person with the arrow keys (click the window first).
 
 ## Setup (Windows, once)
 
@@ -32,7 +37,9 @@ powershell -ExecutionPolicy Bypass -File start.ps1    # 3D duck + robot software
 ```
 
 The 3D view runs on Windows (`pip install mujoco` in `.venv`) because WSL only has software
-OpenGL here; Pollen's robot software runs in WSL (`sim.sh`) and connects to it.
+OpenGL here; Pollen's robot software runs in WSL (`sim.sh`) and connects to it. `sim_world.py`
+wraps Pollen's body server to add the person; `follow.py` steers toward whatever `Eyes` sees —
+`SimEyes` in the sim, a camera on the real duck.
 
 ```
 .venv\Scripts\python voice.py --debug   # voice only, no duck

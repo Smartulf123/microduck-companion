@@ -34,15 +34,18 @@ class Duck:
     # ── the interface ────────────────────────────────────────────────────────
 
     def do(self, behaviour: str) -> str:
-        """sit, stand, kick, pick, roll. Returns "ok" or why the duck refused."""
-        if behaviour in ("sit", "stand"):
-            sitting = self.call("robot.policies").get("sitting")
-            if sitting == (behaviour == "sit"):
+        """sit, stand, kick, pick, roll, drop. Returns "ok" or why the duck refused."""
+        self.velocity = (0.0, 0.0, 0.0)
+        if behaviour == "drop":
+            # Motors off: the duck collapses where it stands (usually onto its face). "stand" gets it up.
+            result = self.call("robot.relax")
+        elif behaviour == "stand" and not self.call("robot.policies").get("sitting"):
+            result = self.call("robot.enable", {"on": True})  # gets up from the floor; no-op if standing
+        elif behaviour in ("sit", "stand"):
+            if self.call("robot.policies").get("sitting") == (behaviour == "sit"):
                 return "ok"  # already there
-            self.velocity = (0.0, 0.0, 0.0)
             result = self.call("robot.do", {"skill": "sit_toggle"})
         elif behaviour in SKILLS:
-            self.velocity = (0.0, 0.0, 0.0)
             result = self.call("robot.do", {"skill": SKILLS[behaviour]})
         else:
             return f"unknown behaviour {behaviour!r}"
@@ -81,8 +84,10 @@ class Duck:
             self.file.flush()
 
     def _keep_moving(self):
+        moving = False
         while True:
             vx, vy, vyaw = self.velocity
-            if (vx, vy, vyaw) != (0.0, 0.0, 0.0):
+            if (vx, vy, vyaw) != (0.0, 0.0, 0.0) or moving:  # one zero after moving: stop now, not at the deadman
                 self._notify("robot.move", {"vx": vx, "vy": vy, "vyaw": vyaw})
+            moving = (vx, vy, vyaw) != (0.0, 0.0, 0.0)
             time.sleep(1 / MOVE_HZ)

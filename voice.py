@@ -28,7 +28,12 @@ WORDS = {
     "spark": "kick", "sparke": "kick",
     "plukk": "pick", "plukk opp": "pick",
     "rull": "roll", "rulle": "roll",
+    "fall": "drop", "besvim": "drop", "sov": "drop",
+    "våkn": "stand", "våkn opp": "stand",
+    "følg": "follow", "følg meg": "follow",
+    "kom": "come", "kom hit": "come", "kom her": "come",
 }
+MAX_WORDS = 4  # commands are short; a word inside a longer sentence is not a command (stop excepted)
 
 
 def match(text: str) -> str | None:
@@ -46,6 +51,8 @@ def match(text: str) -> str | None:
             found.append(WORDS[close[0]])
     if "stop" in found:
         return "stop"
+    if len(tokens) > MAX_WORDS:
+        return None
     # More than two commands in one breath is Whisper making things up, not you.
     return found[0] if 0 < len(found) <= 2 else None
 
@@ -81,7 +88,7 @@ class Ears:
         floor, speech, silent, pre = 0.003, [], 0, []
         with sd.InputStream(samplerate=RATE, channels=1, dtype="float32",
                             blocksize=BLOCK, device=self.device) as mic:
-            print("listening — say sitt, stå, spark, plukk, rull or stopp (Ctrl-C quits)")
+            print("listening — sitt, stå, spark, plukk, rull, fall, følg, kom hit, stopp (Ctrl-C quits)")
             while True:
                 block = mic.read(BLOCK)[0][:, 0].copy()
                 rms = float(np.sqrt(np.mean(block ** 2)))

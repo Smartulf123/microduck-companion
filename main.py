@@ -7,6 +7,7 @@ import argparse
 import sys
 
 from duck_adapter import Duck
+from follow import Follower, SimEyes
 from voice import Ears
 
 
@@ -18,15 +19,19 @@ def main():
     args = ap.parse_args()
 
     duck = Duck()
+    follower = Follower(duck, SimEyes(), say=lambda text: print(f"  duck: {text}"))
 
     def on_command(command, text):
         print(f"heard: {command}   ({text})")
+        follower.cancel()  # any new command ends following, stop most of all
         if command == "stop":
             duck.stop()
-            return
-        result = duck.do(command)
-        if result != "ok":
-            print(f"  duck says no: {result}")
+        elif command in ("follow", "come"):
+            follower.start(command)
+        else:
+            result = duck.do(command)
+            if result != "ok":
+                print(f"  duck says no: {result}")
 
     try:
         Ears(on_command, args.debug, args.mic).run()
