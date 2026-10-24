@@ -5,7 +5,7 @@
     ○ circle         FALL (faceplant)     □ square     beak grab
     L1 / R1          kick left / right    Options      get up
     R2               follow on/off        L2           come here
-    Create           stop everything
+    D-pad up         skates on/off        Create       stop everything
 """
 import os
 import threading
@@ -15,7 +15,8 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame  # noqa: E402
 from pygame._sdl2 import controller  # noqa: E402
 
-from follow import MAX_VX, MAX_YAW  # noqa: E402
+import follow  # noqa: E402
+import skates  # noqa: E402
 
 DEADZONE = 0.15
 B = pygame  # button and axis constants live on the pygame module
@@ -28,8 +29,10 @@ BUTTONS = {
     B.CONTROLLER_BUTTON_RIGHTSHOULDER: "kick_right",
     B.CONTROLLER_BUTTON_START: "stand",   # options
     B.CONTROLLER_BUTTON_BACK: "stop",     # create
+    B.CONTROLLER_BUTTON_DPAD_UP: "skates",
 }
-RUMBLE = {"drop": (1.0, 1.0, 600), "kick": (0.3, 0.8, 150), "kick_right": (0.3, 0.8, 150), "roll": (0.6, 0.4, 400)}
+RUMBLE = {"drop": (1.0, 1.0, 600), "kick": (0.3, 0.8, 150), "kick_right": (0.3, 0.8, 150),
+          "roll": (0.6, 0.4, 400), "skates": (0.2, 0.2, 800)}
 
 
 def axis(pad, which):
@@ -38,8 +41,8 @@ def axis(pad, which):
 
 
 class Gamepad:
-    def __init__(self, duck, follower, say=print):
-        self.duck, self.follower, self.say = duck, follower, say
+    def __init__(self, duck, follower, skates, say=print):
+        self.duck, self.follower, self.skates, self.say = duck, follower, skates, say
         pygame.init()
         controller.init()
 
@@ -75,7 +78,9 @@ class Gamepad:
             triggers = {t for t in (B.CONTROLLER_AXIS_TRIGGERRIGHT, B.CONTROLLER_AXIS_TRIGGERLEFT)
                         if pad.get_axis(t) > 16000}
             for trigger in triggers - pulled:
-                if trigger == B.CONTROLLER_AXIS_TRIGGERLEFT:
+                if self.skates.on:
+                    self.say("pad: no following on skates")
+                elif trigger == B.CONTROLLER_AXIS_TRIGGERLEFT:
                     following = False
                     self.say("pad: come here")
                     self.follower.start("come")
@@ -95,7 +100,10 @@ class Gamepad:
                 if not driving:
                     self.follower.cancel()  # taking the sticks takes the duck back
                     following = False
-                self.duck.walk(forward * MAX_VX, 0, turn * MAX_YAW)
+                if self.skates.on:  # forward only: braking on skates tips it over
+                    self.duck.walk(max(forward, 0) * skates.MAX_VX, 0, turn * skates.MAX_YAW)
+                else:
+                    self.duck.walk(forward * follow.MAX_VX, 0, turn * follow.MAX_YAW)
                 driving = True
             elif driving:
                 self.duck.walk(0, 0, 0)
@@ -107,10 +115,16 @@ class Gamepad:
         if action == "stop":
             self.duck.stop()
             return
+        if action == "skates":
+            pad.rumble(*RUMBLE[action])
+            self.skates.toggle()
+            return
         if action == "sit_stand":
             action = "stand" if self.duck.call("robot.policies").get("sitting") else "sit"
         if action in RUMBLE:
             pad.rumble(*RUMBLE[action])
         result = self.duck.do(action)
+        if "not driving" in result:  # lying on the floor after a fall: any button gets it up first
+            result = self.duck.do("stand")
         if result != "ok":
             self.say(f"duck says no: {result}")

@@ -32,6 +32,8 @@ WORDS = {
     "våkn": "stand", "våkn opp": "stand",
     "følg": "follow", "følg meg": "follow",
     "kom": "come", "kom hit": "come", "kom her": "come",
+    "rulleskøyter": "skates", "rulleskøyte": "skates", "skøyter": "skates", "skates": "skates",
+    "rulle skøyter": "skates", "rulle skøyte": "skates",
 }
 MAX_WORDS = 4  # commands are short; a word inside a longer sentence is not a command (stop excepted)
 
@@ -88,7 +90,7 @@ class Ears:
         floor, speech, silent, pre = 0.003, [], 0, []
         with sd.InputStream(samplerate=RATE, channels=1, dtype="float32",
                             blocksize=BLOCK, device=self.device) as mic:
-            print("listening — sitt, stå, spark, plukk, rull, fall, følg, kom hit, stopp (Ctrl-C quits)")
+            print("listening — sitt, stå, spark, plukk, rull, fall, følg, kom hit, rulleskøyter, stopp (Ctrl-C quits)")
             while True:
                 block = mic.read(BLOCK)[0][:, 0].copy()
                 rms = float(np.sqrt(np.mean(block ** 2)))

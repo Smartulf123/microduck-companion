@@ -13,17 +13,14 @@ P="$STATE/policies/current"
 mkdir -p "$STATE"
 
 [ -f "$P/alpha_stand.onnx" ] || sh "$REPO/scripts/seed-policies.sh" "$STATE/policies"
+# robotd picks each mode's policies (velstand walking, roller.onnx on skates) from where a robot
+# keeps them; give the sim the same layout instead of naming files, so mode switching just works.
+[ -e /opt/robot/policies/current ] || { sudo mkdir -p /opt/robot/policies && sudo ln -sfn "$P" /opt/robot/policies/current; }
 [ -d "$STATE/sounds/duck-a" ] || DUCK_IDENTITY=duck-a "$REPO/target/debug/sounds" ensure-bank --dir "$STATE/sounds/duck-a" >/dev/null 2>&1 || true
 cat > "$STATE/companion.toml" <<TOML
 [policy]
 enabled = true
-walk = "$P/${DUCK_WALK:-velstand.onnx}"
-stand = "${DUCK_STAND:-none}"
-sitstand = "$P/alpha_sitstand.onnx"
-ground_pick = "$P/alpha_ground_pick.onnx"
-kick_left = "$P/ball_kick_left.onnx"
-kick_right = "$P/ball_kick_right.onnx"
-roulade = "$P/roulade.onnx"
+mode = "walk"
 
 [audio]
 bank = "$STATE/sounds/duck-a"

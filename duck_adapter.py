@@ -51,6 +51,17 @@ class Duck:
             return f"unknown behaviour {behaviour!r}"
         return "ok" if result.get("accepted") else result.get("reason", "refused")
 
+    def mode(self) -> str:
+        """"walk" or "roller" (skates)."""
+        return self.call("robot.mode").get("mode", "walk")
+
+    def set_mode(self, mode: str) -> str:
+        """Switch policies for skates ("roller") or feet ("walk"). The wheels themselves go on by
+        hand; the duck returns to its home pose first, so hold it while it switches."""
+        self.velocity = (0.0, 0.0, 0.0)
+        result = self.call("robot.setMode", {"mode": mode})
+        return "ok" if result.get("accepted") else result.get("reason", "refused")
+
     def walk(self, vx: float, vy: float, yaw_rate: float) -> None:
         """m/s forward, m/s left, rad/s (positive turns left). Held until changed or stop()."""
         self.velocity = (vx, vy, yaw_rate)

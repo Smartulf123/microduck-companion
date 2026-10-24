@@ -24,12 +24,18 @@ class SimEyes:
     RANGE = 5.0
 
     def __init__(self, address=("127.0.0.1", 7820)):
-        self.file = socket.create_connection(address, timeout=2).makefile("rw")
+        self.address, self.file = address, None
 
     def look(self):
-        self.file.write("{}\n")
-        self.file.flush()
-        truth = json.loads(self.file.readline())
+        try:
+            if self.file is None:  # (re)connect: the sim restarts when the skates go on or off
+                self.file = socket.create_connection(self.address, timeout=2).makefile("rw")
+            self.file.write("{}\n")
+            self.file.flush()
+            truth = json.loads(self.file.readline())
+        except (OSError, ValueError):
+            self.file = None
+            return None
         (px, py), (dx, dy, yaw) = truth["person"], truth["duck"]
         x, y = px - dx, py - dy
         ahead = x * math.cos(yaw) + y * math.sin(yaw)

@@ -1,4 +1,4 @@
-"""Say a word, the duck does it.
+"""Say a word (or press a button), the duck does it.
 
     python main.py            # needs the sim running (see README)
     python main.py --debug
@@ -9,6 +9,7 @@ import sys
 from duck_adapter import Duck
 from follow import Follower, SimEyes
 from gamepad import Gamepad
+from skates import Skates
 from voice import Ears
 
 
@@ -21,13 +22,18 @@ def main():
 
     duck = Duck()
     follower = Follower(duck, SimEyes(), say=lambda text: print(f"  duck: {text}"))
-    Gamepad(duck, follower, say=lambda text: print(f"  {text}")).start()  # if a controller is plugged in
+    skates = Skates(duck, follower, say=lambda text: print(f"  duck: {text}"))
+    Gamepad(duck, follower, skates, say=lambda text: print(f"  {text}")).start()  # if a controller is plugged in
 
     def on_command(command, text):
         print(f"heard: {command}   ({text})")
         follower.cancel()  # any new command ends following, stop most of all
         if command == "stop":
             duck.stop()
+        elif command == "skates":
+            skates.toggle()
+        elif command in ("follow", "come") and skates.on:
+            print("  duck: no following on skates")
         elif command in ("follow", "come"):
             follower.start(command)
         else:

@@ -14,13 +14,17 @@ A community project, not affiliated with Pollen Robotics. Apache-2.0.
 | fall / sov / besvim | motors off: drops on its face (stå or våkn opp gets it up) |
 | følg / følg meg | follows the person, keeping ~0.7 m |
 | kom / kom hit | walks to the person and stops ~0.5 m away |
+| rulleskøyter / skøyter | roller skates on/off (≈0.6 m/s; forward only, steering is loose) |
 | stopp | stop (always wins) |
 
 In the 3D window, move the person with the arrow keys (click the window first).
 
 A PS5 controller (USB or Bluetooth) works beside voice — mapping at the top of `gamepad.py`:
 left stick walks, ✕ sit/stand, ○ fall, △ roll, □ beak grab, L1/R1 kicks, Options get up,
-R2 follow on/off, L2 come here, Create stop. Needs `pip install pygame`.
+R2 follow on/off, L2 come here, D-pad up skates on/off, Create stop. Needs `pip install pygame`.
+
+Skates: in the sim the 3D window restarts with a wheeled duck (`sim_world.py --skates`); on the
+real duck you clip the wheels on and hold it while it switches to Pollen's roller mode.
 
 ## Setup (Windows, once)
 
