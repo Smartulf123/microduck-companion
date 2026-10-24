@@ -70,9 +70,14 @@ def launch_passive(model, data, **kwargs):
                 world.data.mocap_pos[0][:2] += (dx, dy)
 
     viewer = _launch_passive(model, data, key_callback=on_key, **kwargs)
-    with viewer.lock():  # behind the duck, looking the way it faces: arrow keys match the screen
-        viewer.cam.distance, viewer.cam.elevation, viewer.cam.azimuth = 4.2, -18, 0
-        viewer.cam.lookat[:] = (1.0, 0.0, 0.6)
+
+    def aim():  # behind the duck, looking the way it faces: arrow keys match the screen
+        with viewer.lock():
+            viewer.cam.distance, viewer.cam.elevation, viewer.cam.azimuth = 4.2, -18, 0
+            viewer.cam.lookat[:] = (1.0, 0.0, 0.6)
+
+    aim()
+    threading.Timer(1.5, aim).start()  # the viewer sometimes resets its camera as it opens
     return viewer
 
 
