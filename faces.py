@@ -1,12 +1,13 @@
 """Face recognition: is this you? YuNet finds faces, SFace compares them with yours. CPU, offline.
 
-    python faces.py enroll        # look at the BRIO for a few seconds; saves me/face.npy
+    python faces.py enroll        # look at the webcam for a few seconds; saves me/face.npy
     python faces.py               # live test: green = you, red = someone else
 
 Your face is stored as a fingerprint in me/face.npy on this laptop only (me/ is not in git).
 Models (opencv_zoo): YuNet (MIT) and SFace (Apache-2.0), in models/.
 """
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -107,6 +108,6 @@ def live(camera: int):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("action", nargs="?", default="live", choices=("live", "enroll"))
-    ap.add_argument("--camera", type=int, default=1)
+    ap.add_argument("--camera", type=int, default=int(os.environ.get("DUCK_CAMERA", 0)))
     a = ap.parse_args()
     enroll(a.camera) if a.action == "enroll" else live(a.camera)

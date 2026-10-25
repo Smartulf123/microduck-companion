@@ -1,6 +1,6 @@
 """Camera eyes: find people, lock on to one, and keep following that one.
 
-    python eyes.py                      # BRIO (camera 1) with a preview window; L locks, U unlocks
+    python eyes.py                      # webcam with a preview window; L locks, F finds your face, U unlocks
     python eyes.py --height 0.2 --pitch 15   # camera on the floor, tilted up: the duck's view
 
 look() gives (distance m, bearing rad, positive = left) of the locked person, like follow.SimEyes.
@@ -16,6 +16,7 @@ duck, calibrate it once.
 """
 import argparse
 import math
+import os
 import threading
 import time
 from pathlib import Path
@@ -25,6 +26,7 @@ import numpy as np
 import onnxruntime as ort
 
 MODEL = Path(__file__).parent / "models" / "yolox_nano.onnx"  # YOLOX-Nano, Apache-2.0, COCO class 0 = person
+CAMERA = int(os.environ.get("DUCK_CAMERA", 0))  # which webcam; set DUCK_CAMERA if yours is not the first
 SIZE = 416
 MATCH = 0.45      # appearance distance (0 same .. 1 nothing alike) above which it is not "you"
 FRESH_S = 0.5     # a sighting older than this counts as lost
@@ -80,10 +82,11 @@ def unlike(a, b):
 
 
 class CameraEyes:
-    def __init__(self, camera=1, hfov=70.0, height=0.8, pitch=0.0, show=True):
+    def __init__(self, camera=None, hfov=70.0, height=0.8, pitch=0.0, show=True):
         """hfov: horizontal field of view, degrees. height: camera above the floor, m.
         pitch: degrees the camera is tilted UP (negative = looking down)."""
         self.hfov, self.height, self.pitch = math.radians(hfov), height, math.radians(pitch)
+        camera = CAMERA if camera is None else camera
         self.capture = cv2.VideoCapture(camera, cv2.CAP_DSHOW)
         if not self.capture.isOpened():
             raise SystemExit(f"no camera {camera}")
@@ -245,7 +248,7 @@ class CameraEyes:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--camera", type=int, default=1, help="1 = Logitech BRIO here, 0 = the laptop's own")
+    ap.add_argument("--camera", type=int, default=CAMERA, help="webcam number (default: $DUCK_CAMERA, else 0)")
     ap.add_argument("--hfov", type=float, default=70.0)
     ap.add_argument("--height", type=float, default=0.8, help="camera height above the floor, m")
     ap.add_argument("--pitch", type=float, default=0.0, help="degrees tilted up")

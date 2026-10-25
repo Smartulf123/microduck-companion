@@ -20,7 +20,7 @@ def main():
     ap.add_argument("--mic", type=int, default=None)
     ap.add_argument("--eyes", choices=("sim", "webcam"), default="sim",
                     help="who the duck follows: the sim's person, or you, seen by a webcam")
-    ap.add_argument("--camera", type=int, default=1)
+    ap.add_argument("--camera", type=int, default=None, help="webcam number (default: $DUCK_CAMERA, else 0)")
     args = ap.parse_args()
 
     duck = Duck()
