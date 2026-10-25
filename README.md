@@ -23,6 +23,15 @@ A PS5 controller (USB or Bluetooth) works beside voice — mapping at the top of
 left stick walks, ✕ sit/stand, ○ fall, △ roll, □ beak grab, L1/R1 kicks, Options get up,
 R2 follow on/off, L2 come here, D-pad up skates on/off, Create stop. Needs `pip install pygame`.
 
+Real eyes (`eyes.py`, needs `pip install opencv-python onnxruntime` and
+`models/yolox_nano.onnx` from github.com/Megvii-BaseDetection/YOLOX releases 0.1.1rc0): finds
+people with YOLOX-Nano, locks on to the one in front, and keeps following that one by how they look.
+
+```
+.venv\Scripts\python eyes.py --height 0.2 --pitch 15   # BRIO on the floor, tilted up: the duck's view
+.venv\Scripts\python main.py --eyes webcam             # "følg" locks on to you through the webcam
+```
+
 Skates: in the sim the 3D window restarts with a wheeled duck (`sim_world.py --skates`); on the
 real duck you clip the wheels on and hold it while it switches to Pollen's roller mode.
 

@@ -1,7 +1,7 @@
 """Follow-me: steer the duck toward a person it can see.
 
 Eyes answer look() with (distance m, bearing rad, positive = to the left) or None when nobody is in
-view. SimEyes reads the simulator; a camera-based Eyes replaces it later and nothing else changes.
+view. SimEyes reads the simulator; eyes.CameraEyes finds and locks on to you in a camera image.
 """
 import json
 import math
@@ -56,7 +56,12 @@ class Follower:
         threading.Thread(target=self._loop, daemon=True).start()
 
     def start(self, mode: str):
-        """"follow" keeps going; "come" stops once it has arrived."""
+        """"follow" keeps going; "come" stops once it has arrived. Eyes that can lock on
+        (eyes.CameraEyes) lock on to whoever is in front first."""
+        lock = getattr(self.eyes, "lock", None)
+        if lock is not None and not lock():
+            self.say("I can't see anyone to follow")
+            return
         with self.lock:
             self.mode = mode
 

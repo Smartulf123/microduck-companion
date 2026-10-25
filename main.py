@@ -18,10 +18,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--mic", type=int, default=None)
+    ap.add_argument("--eyes", choices=("sim", "webcam"), default="sim",
+                    help="who the duck follows: the sim's person, or you, seen by a webcam")
+    ap.add_argument("--camera", type=int, default=1)
     args = ap.parse_args()
 
     duck = Duck()
-    follower = Follower(duck, SimEyes(), say=lambda text: print(f"  duck: {text}"))
+    if args.eyes == "webcam":
+        from eyes import CameraEyes
+        eyes = CameraEyes(args.camera)
+    else:
+        eyes = SimEyes()
+    follower = Follower(duck, eyes, say=lambda text: print(f"  duck: {text}"))
     skates = Skates(duck, follower, say=lambda text: print(f"  duck: {text}"))
     Gamepad(duck, follower, skates, say=lambda text: print(f"  {text}")).start()  # if a controller is plugged in
 
