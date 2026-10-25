@@ -32,6 +32,16 @@ people with YOLOX-Nano, locks on to the one in front, and keeps following that o
 .venv\Scripts\python main.py --eyes webcam             # "følg" locks on to you through the webcam
 ```
 
+Face (`faces.py`, YuNet + SFace from opencv_zoo in `models/`): enrol once, and "følg" becomes a
+ritual — the duck stops, looks up where a face would be (ahead, left, right), finds yours, quacks,
+and locks on to the body under it. Lost you? Seeing your face again re-locks. Your face fingerprint
+stays in `me/` on this laptop, never in git.
+
+```
+.venv\Scripts\python faces.py enroll   # once: look at the BRIO for a few seconds
+.venv\Scripts\python faces.py          # live check: green = you
+```
+
 Skates: in the sim the 3D window restarts with a wheeled duck (`sim_world.py --skates`); on the
 real duck you clip the wheels on and hold it while it switches to Pollen's roller mode.
 
