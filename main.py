@@ -10,6 +10,7 @@ from duck_adapter import Duck
 from follow import Follower, SimEyes
 from gamepad import Gamepad
 from skates import Skates
+import voice
 from voice import Ears
 
 
@@ -21,6 +22,8 @@ def main():
     ap.add_argument("--eyes", choices=("sim", "webcam"), default="sim",
                     help="who the duck follows: the sim's person, or you, seen by a webcam")
     ap.add_argument("--camera", type=int, default=None, help="webcam number (default: $DUCK_CAMERA, else 0)")
+    ap.add_argument("--language", default=None, help="speech language (default: $DUCK_LANGUAGE, else no); see voice.py")
+    ap.add_argument("--model", default=None, help="whisper.cpp model (default: per language); see voice.py")
     args = ap.parse_args()
 
     duck = Duck()
@@ -50,7 +53,7 @@ def main():
                 print(f"  duck says no: {result}")
 
     try:
-        Ears(on_command, args.debug, args.mic).run()
+        Ears(on_command, args.debug, args.mic, args.language or voice.LANGUAGE, args.model).run()
     except KeyboardInterrupt:
         duck.stop()
 

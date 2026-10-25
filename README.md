@@ -1,8 +1,11 @@
 # microduck-companion
 
-Talk to your [Microduck](https://github.com/pollen-robotics/microduck) in Norwegian, drive it with a
-PS5 controller, and have it find you — by your face — and follow you around. Everything runs
-offline on a laptop CPU: no cloud, no GPU, no paid APIs.
+Talk to your [Microduck](https://github.com/pollen-robotics/microduck) in your own language, drive
+it with a PS5 controller, and have it find you — by your face — and follow you around. Everything
+runs offline on a laptop CPU: no cloud, no GPU, no paid APIs.
+
+Norwegian and English work out of the box; any language Whisper understands is one word table away,
+and the speech recogniser itself can be swapped (see [Your language](#your-language)).
 
 A community project, not affiliated with Pollen Robotics. Apache-2.0.
 
@@ -12,23 +15,21 @@ move to hardware is a different address in one file — but it has not run on a 
 
 ## What it does
 
-| Say (Norwegian) | Controller | The duck |
-|---|---|---|
-| sitt / sett deg | ✕ | sits (✕ again stands) |
-| stå / stå opp / våkn opp | Options | stands up, also after a fall |
-| spark | L1 / R1 | kicks (left / right) |
-| plukk / plukk opp | □ | beak grab |
-| rull | △ | forward roll |
-| fall / sov / besvim | ○ | motors off: drops on its face |
-| følg / følg meg | R2 | looks up, finds you, follows ~0.7 m behind |
-| kom / kom hit | L2 | looks up, finds you, walks over and stops |
-| rulleskøyter / skøyter | D-pad up | roller skates on/off (fast, forward only, loose steering) |
-| stopp | Create | stop — always wins |
-| | left stick | walk and turn |
+| Say (English) | Say (Norwegian) | Controller | The duck |
+|---|---|---|---|
+| sit / sit down | sitt / sett deg | ✕ | sits (✕ again stands) |
+| stand up / get up | stå opp / våkn opp | Options | stands up, also after a fall |
+| kick | spark | L1 / R1 | kicks (left / right) |
+| pick up | plukk opp | □ | beak grab |
+| roll | rull | △ | forward roll |
+| fall / sleep | fall / sov | ○ | motors off: drops on its face |
+| follow me | følg meg | R2 | looks up, finds you, follows ~0.7 m behind |
+| come here | kom hit | L2 | looks up, finds you, walks over and stops |
+| roller skates | rulleskøyter | D-pad up | roller skates on/off (fast, forward only, loose steering) |
+| stop | stopp | Create | stop — always wins |
+| | | left stick | walk and turn |
 
-The words are one table at the top of `voice.py`; put in your own language's.
-
-**Følg, step by step:** the duck stops, gives a questioning quack, looks up where a standing
+**"Follow me", step by step:** the duck stops, gives a questioning quack, looks up where a standing
 person's face would be (ahead, left, right), and once it recognises your face it quacks hello and
 locks on to the person under it. While you walk away it keeps track of you by your clothes; if it
 loses you, it searches, then waits — and seeing your face again picks you back up. Without an
@@ -39,7 +40,7 @@ enrolled face it follows whoever is in front.
 | File | Does |
 |---|---|
 | `duck_adapter.py` | The only file that talks to the duck: Pollen's own JSON-RPC (`robot.do`, `robot.move`, …) |
-| `voice.py` | Mic → [NB-Whisper](https://huggingface.co/NbAiLab/nb-whisper-base) (Norwegian Whisper, whisper.cpp) → command |
+| `voice.py` | Mic → Whisper (whisper.cpp, offline) → command; word tables per language |
 | `gamepad.py` | PS5 / any SDL controller → commands, with rumble |
 | `follow.py` | Steers toward whatever the eyes see; the følg ritual |
 | `eyes.py` | Camera → people (YOLOX-Nano) → lock on to you by appearance → distance and direction |
@@ -62,7 +63,8 @@ python -m venv .venv
 .venv\Scripts\pip install pywhispercpp sounddevice numpy pygame opencv-python onnxruntime mujoco
 ```
 
-**2. Models** (into `models/`, not in git)
+**2. Models** (into `models/`, not in git). The first line is only for Norwegian; other languages
+download Whisper "base" by themselves on first use.
 
 ```
 mkdir models
@@ -110,6 +112,22 @@ In the 3D window, the arrow keys move the simulated person (click the window fir
 
 Not the first webcam? `setx DUCK_CAMERA 1` (or pass `--camera 1`). For the duck's view, put the
 webcam on the floor tilted up: `eyes.py --height 0.2 --pitch 15`.
+
+## Your language
+
+```
+setx DUCK_LANGUAGE en                   # or pass --language en; default: no (Norwegian)
+```
+
+- **Another language:** add a table for it to `WORDS` at the top of `voice.py` — your words on the
+  left, the duck's commands (`stop`, `sit`, `stand`, `kick`, `pick`, `roll`, `drop`, `follow`,
+  `come`, `skates`) on the right. Whisper understands about 100 languages.
+- **Another or bigger model:** `--model small` (more accurate, slower), or any whisper.cpp model
+  file; `DUCK_WHISPER_MODEL` makes it stick. Norwegian uses
+  [NB-Whisper](https://huggingface.co/NbAiLab/nb-whisper-base), tuned for Norwegian dialects by the
+  National Library of Norway; other languages default to Whisper "base".
+- **Another recogniser altogether** (Vosk, a cloud service, …): replace `Ears.transcribe()` in
+  `voice.py` — it takes audio and returns text; everything after it stays the same.
 
 **Privacy:** your face is stored as a fingerprint in `me/face.npy` on your own machine, ignored by
 git. Nothing is sent anywhere.
