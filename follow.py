@@ -15,6 +15,9 @@ import time
 MIN_VX, MAX_VX, MAX_YAW = 0.25, 0.45, 0.6
 KEEP = {"follow": 0.7, "come": 0.5}  # metres to stop short of the person
 SEARCH_S = 6.0                        # after losing sight: arc toward where they went, then wait
+# Where a standing person's face is, in the duck's trunk frame (x ahead, y left, z up; the floor is
+# ~0.12 m below): straight ahead, then left, then right. The duck looks up at each to find you.
+FACE_SPOTS = [(1.2, 0.0, 1.4), (1.2, 0.7, 1.4), (1.2, -0.7, 1.4)]
 
 
 class SimEyes:
@@ -43,6 +46,11 @@ class SimEyes:
         distance, bearing = math.hypot(ahead, left), math.atan2(left, ahead)
         return (distance, bearing) if distance < self.RANGE and abs(bearing) < self.HALF_FOV else None
 
+    def find_me(self, timeout=1.0) -> bool:
+        """The sim has no faces: 'found' means the person is in view."""
+        time.sleep(min(timeout, 0.6))
+        return self.look() is not None
+
 
 def clip(v, lo, hi):
     return max(lo, min(hi, v))
@@ -53,22 +61,55 @@ class Follower:
         self.duck, self.eyes, self.say = duck, eyes, say
         self.mode = None
         self.lock = threading.Lock()
+        self.attempt = 0  # bumped by cancel(), so a search in progress knows to give up
         threading.Thread(target=self._loop, daemon=True).start()
 
     def start(self, mode: str):
-        """"follow" keeps going; "come" stops once it has arrived. Eyes that can lock on
-        (eyes.CameraEyes) lock on to whoever is in front first."""
-        lock = getattr(self.eyes, "lock", None)
-        if lock is not None and not lock():
-            self.say("I can't see anyone to follow")
-            return
+        """"follow" keeps going; "come" stops once it has arrived. First the duck finds you:
+        it stops, looks up where a face would be, and locks on (to your face, if enrolled)."""
         with self.lock:
-            self.mode = mode
+            self.mode = None
+            self.attempt += 1
+            attempt = self.attempt
+        threading.Thread(target=self._find_you_then, args=(mode, attempt), daemon=True).start()
 
     def cancel(self):
         with self.lock:
             self.mode = None
+            self.attempt += 1
         self.duck.walk(0, 0, 0)
+        self.duck.look_ahead()
+
+    def _find_you_then(self, mode, attempt):
+        self.duck.walk(0, 0, 0)
+        self._sound("inquire")  # a rising "who's there?"
+        found = False
+        for x, y, z in FACE_SPOTS:
+            if self.attempt != attempt:
+                return
+            self.duck.look(x, y, z)
+            time.sleep(0.4)  # let the head get there
+            if self.eyes.find_me(timeout=1.2):
+                found = True
+                break
+        self.duck.look_ahead()
+        if self.attempt != attempt:
+            return
+        if not found:
+            self._sound("peck")
+            self.say("couldn't find you — say it again when you're in front of me")
+            return
+        self._sound("greet")
+        self.say("found you!")
+        with self.lock:
+            if self.attempt == attempt:
+                self.mode = mode
+
+    def _sound(self, tag):
+        try:
+            self.duck.sound(tag)
+        except Exception:  # a duck without a voice still follows
+            pass
 
     def _loop(self):
         last_bearing, lost_at, waiting = 0.0, None, False

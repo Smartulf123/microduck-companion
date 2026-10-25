@@ -92,6 +92,16 @@ class CameraEyes:
         self.sighting = None
         self.want_lock = threading.Event()
         self.lock_done = threading.Event()
+        self.want_face = threading.Event()
+        self.face_done = threading.Event()
+        self.faces = None
+        try:
+            from faces import Faces
+            faces = Faces()
+            self.faces = faces if faces.known() else None  # not enrolled: lock on whoever is in front
+        except Exception:  # models missing: same
+            pass
+        self.face_boxes = []
         threading.Thread(target=self._run, daemon=True).start()
 
     # ── what follow.py uses ──────────────────────────────────────────────────
@@ -108,6 +118,17 @@ class CameraEyes:
         self.lock_done.wait(timeout)
         return self.me is not None
 
+    def find_me(self, timeout=1.5) -> bool:
+        """Look for your face for up to `timeout` s; on a match, lock on to the body under it.
+        Without an enrolled face this is lock(): whoever is in front."""
+        if self.faces is None:
+            return self.lock(timeout)
+        self.face_done.clear()
+        self.want_face.set()
+        found = self.face_done.wait(timeout)
+        self.want_face.clear()
+        return found
+
     def unlock(self):
         self.me, self.box, self.sighting = None, None, None
 
@@ -123,6 +144,16 @@ class CameraEyes:
             if self.want_lock.is_set():
                 self._lock(frame, people)
             target = self._find(frame, people) if self.me is not None else None
+            lost = self.me is not None and target is None and time.time() - self.seen_at > 1.0
+            self.face_boxes = []
+            if self.faces is not None and (self.want_face.is_set() or lost):
+                # asked to find you, or you got lost and your face might bring you back
+                self.face_boxes = self.faces.find(frame)
+                body = self._body_under_my_face(frame, people)
+                if body is not None:
+                    self.me, self.box, self.seen_at = signature(frame, body), body, time.time()
+                    target = body
+                    self.face_done.set()
             if target is not None:
                 self.box, self.seen_at = target, time.time()
                 self.sighting = self._where(frame, target)
@@ -138,6 +169,19 @@ class CameraEyes:
             self.unlock()
         self.want_lock.clear()
         self.lock_done.set()
+
+    def _body_under_my_face(self, frame, people):
+        from faces import SAME
+        mine = [f for f in self.face_boxes if f[4] >= SAME]
+        if not mine:
+            return None
+        x, y, w, h, _ = max(mine, key=lambda f: f[4])
+        cx, cy = x + w / 2, y + h / 2
+        for box in people:  # the person whose box has this face in its top part
+            if box[0] <= cx <= box[2] and box[1] <= cy <= box[1] + 0.5 * (box[3] - box[1]):
+                return box
+        H, W = frame.shape[:2]  # a face but no body box (crouching close): take what is below the face
+        return (max(0, cx - 1.5 * w), y, min(W, cx + 1.5 * w), min(H, y + 6 * h), 1.0)
 
     def _find(self, frame, people):
         w = frame.shape[1]
@@ -169,12 +213,19 @@ class CameraEyes:
         return min(distance, 6.0), bearing
 
     def _draw(self, frame, people, target):
+        from faces import SAME
+        for x, y, w, h, likeness in self.face_boxes:
+            you = likeness >= SAME
+            colour = (0, 220, 0) if you else (0, 0, 230)
+            cv2.rectangle(frame, (int(x), int(y)), (int(x + w), int(y + h)), colour, 2)
+            cv2.putText(frame, f"{'you' if you else '?'} {likeness:.2f}", (int(x), int(y) - 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
         for box in people:
             mine = target is not None and box is target
             colour = (0, 220, 0) if mine else (160, 160, 160)
             cv2.rectangle(frame, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), colour, 3 if mine else 1)
         if self.me is None:
-            text = "not locked - press L (or say folg)"
+            text = "not locked - L: whoever is in front, F: find my face"
         elif target is None:
             text = "locked, but can't see you"
         else:
@@ -186,6 +237,8 @@ class CameraEyes:
         key = cv2.waitKey(1) & 0xFF
         if key == ord("l"):
             self.want_lock.set()
+        elif key == ord("f"):
+            threading.Thread(target=self.find_me, args=(3.0,), daemon=True).start()
         elif key == ord("u"):
             self.unlock()
 

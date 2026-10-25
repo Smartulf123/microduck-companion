@@ -28,6 +28,7 @@ class Duck:
         self.lock = threading.Lock()
         self.ids = itertools.count(1)
         self.velocity = (0.0, 0.0, 0.0)
+        self.gaze = None  # head joints to hold, from look()
         threading.Thread(target=self._keep_moving, daemon=True).start()
         self.call("robot.enable", {"on": True})  # hand the robot to the policy; it stands itself up
 
@@ -61,6 +62,19 @@ class Duck:
         self.velocity = (0.0, 0.0, 0.0)
         result = self.call("robot.setMode", {"mode": mode})
         return "ok" if result.get("accepted") else result.get("reason", "refused")
+
+    def look(self, x: float, y: float, z: float) -> None:
+        """Aim the head at a point (m, trunk frame: x forward, y left, z up; the floor is ~0.12 m
+        below z=0) and hold it there until look_ahead()."""
+        self.gaze = self.call("robot.look", {"x": x, "y": y, "z": z, "neck_pitch": 0.0}).get("head")
+
+    def look_ahead(self) -> None:
+        """Let go of the head; it returns to its normal pose."""
+        self.gaze = None
+
+    def sound(self, tag: str) -> None:
+        """A sound from the duck's own voice: greet, inquire, chirp, coo, alarm, peck."""
+        self.call("robot.sound", {"tag": tag})
 
     def walk(self, vx: float, vy: float, yaw_rate: float) -> None:
         """m/s forward, m/s left, rad/s (positive turns left). Held until changed or stop()."""
@@ -101,4 +115,7 @@ class Duck:
             if (vx, vy, vyaw) != (0.0, 0.0, 0.0) or moving:  # one zero after moving: stop now, not at the deadman
                 self._notify("robot.move", {"vx": vx, "vy": vy, "vyaw": vyaw})
             moving = (vx, vy, vyaw) != (0.0, 0.0, 0.0)
+            gaze = self.gaze
+            if gaze:  # head intents expire like moves do: resend to hold the gaze
+                self._notify("robot.head", gaze)
             time.sleep(1 / MOVE_HZ)
