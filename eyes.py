@@ -91,6 +91,7 @@ class CameraEyes:
         if not self.capture.isOpened():
             raise SystemExit(f"no camera {camera}")
         self.detector, self.show = Detector(), show
+        self.quit_on_close = False  # eyes.py on its own exits when its window is closed
         self.me, self.box, self.seen_at = None, None, 0.0
         self.sighting = None
         self.want_lock = threading.Event()
@@ -238,6 +239,15 @@ class CameraEyes:
         cv2.putText(frame, text, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         cv2.imshow("duck eyes", frame)
         key = cv2.waitKey(1) & 0xFF
+        if key == ord("q") or cv2.getWindowProperty("duck eyes", cv2.WND_PROP_VISIBLE) < 1:
+            self.show = False  # closed: stop drawing (the eyes keep working)
+            try:
+                cv2.destroyWindow("duck eyes")
+            except cv2.error:  # already gone: the close button did it
+                pass
+            if self.quit_on_close:
+                os._exit(0)
+            return
         if key == ord("l"):
             self.want_lock.set()
         elif key == ord("f"):
@@ -254,6 +264,7 @@ if __name__ == "__main__":
     ap.add_argument("--pitch", type=float, default=0.0, help="degrees tilted up")
     a = ap.parse_args()
     eyes = CameraEyes(a.camera, a.hfov, a.height, a.pitch)
+    eyes.quit_on_close = True
     while True:
         time.sleep(1)
         seen = eyes.look()

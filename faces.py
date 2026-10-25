@@ -101,8 +101,10 @@ def live(camera: int):
             cv2.putText(frame, f"{'you' if you else '?'} {likeness:.2f}", (int(x), int(y) - 6),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, colour, 2)
         cv2.imshow("faces", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        if cv2.waitKey(1) & 0xFF == ord("q") or cv2.getWindowProperty("faces", cv2.WND_PROP_VISIBLE) < 1:
+            break  # Q, or the window's close button
+    capture.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
